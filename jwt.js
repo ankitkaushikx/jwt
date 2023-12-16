@@ -1,23 +1,27 @@
 import "dotenv/config";
-import pkg from "jsonwebtoken";
-const { sign, verify } = pkg;
+import JWT from "jsonwebtoken";
+const { sign, verify } = JWT;
+
 export function createToken(user) {
   const accessToken = sign({ username: user.username }, process.env.JWTSECRET);
   return accessToken;
 }
 
-export const validateToken = (req, res, next) => {
+export function validateToken(req, res, next) {
+  console.log("Request Cookies", req.cookies);
   const accessToken = req.cookies["access-token"];
   if (!accessToken) {
-    return res.status(400).json({ error: "User not Aunthenticated" });
+    res.status(400).json({ message: "User Not Authenticated" });
   }
+
   try {
-    const validToken = verify(accessToken, process.env.JWTSECRET);
-    if (validToken) {
-      req.authenticated = true;
+    const validateToken = verify(accessToken, process.env.JWTSECRET);
+    if (validateToken) {
+      req.authenticate = true;
       return next();
     }
-  } catch (err) {
-    return res.status(400).json({ error: err });
+  } catch (error) {
+    console.error("Validation Error", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
-};
+}
