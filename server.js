@@ -74,6 +74,29 @@ app.get("/profile", validateToken, (req, res) => {
   res.json("profile");
 });
 //
+
+app.get("/set-cookie", (req, res) => {
+  res.cookie("myNewCookie", "Thisismynewcookie", {
+    maxAge: 60 * 60 * 1000,
+    httpOnly: true,
+    path: "/d",
+    domain: "localhost",
+  });
+  res.cookie("acookie", "randompassword");
+  res.json("Cookie Setted");
+});
+
+app.get("/get-cookie", (req, res) => {
+  console.log(req.cookies);
+  res.json({ cookie: req.cookies, message: "Cookie Here" });
+});
+
+app.get("/del-cookie", (req, res) => {
+  res.clearCookie("alsocookie");
+  res.clearCookie("myNewCookie");
+  res.json("Cookie Cleared");
+});
+//
 app.listen(process.env.PORT, () => {
   console.log("SERVER STARTED SUCCESSFULLY AT", process.env.PORT);
 });
