@@ -1,5 +1,6 @@
 import "dotenv/config";
 import express from "express";
+import jwt from "jsonwebtoken";
 import userModel from "./models/userModel.js";
 import bcrypt from "bcrypt";
 import { createToken, validateToken } from "./jwt.js";
@@ -7,9 +8,9 @@ import cookieParser from "cookie-parser";
 import connectDB from "./db.js";
 await connectDB();
 const app = express();
-app.use(express.json());
-app.use(express.json({ urlencoded: true }));
 app.use(cookieParser());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.get("/", (req, res) => {
   res.json("Base Route ");
@@ -44,26 +45,29 @@ app.post("/register", (req, res) => {
 //
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
-  console.log("BODY", req.body);
-  const user = userModel.findOne({ where: { username: username } });
 
-  if (!user) res.status(400).json({ error: "User Doesn't Exist" });
+  try {
+    const user = await userModel.findOne({ username: username });
 
-  const dbPassword = user.password;
-  bcrypt.compare(password, dbPassword).then((match) => {
+    if (!user) {
+      return res.status(400).json({ error: "No User Exist" });
+    }
+
+    const dbPassword = user.password;
+
+    const match = await bcrypt.compare(password, dbPassword);
+
     if (!match) {
-      res.status(400).json({ error: "Wrong Username and Password Combination!" });
+      return res.status(400).json({ error: "Wrong Password" });
     } else {
       const accessToken = createToken(user);
-
-      res.cookie("access-token", accessToken, {
-        maxAge: 60 * 60 * 24 * 30 * 1000,
-        httpOnly: true,
-      });
-
-      res.json("LOGGED IN");
+      res.cookie("access-token", accessToken, { maxAge: 60 * 60 * 24 * 30 * 1000, httpOnly: true });
+      res.json("Logged IN");
     }
-  });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Internal Server Error", details: error.message });
+  }
 });
 
 app.get("/profile", validateToken, (req, res) => {
